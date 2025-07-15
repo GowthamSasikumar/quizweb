@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>API Quiz App</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom right, #a1c4fd, #c2e9fb);
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 40px auto;
+      background: #ffffffd9;
+      padding: 25px 20px;
+      border-radius: 15px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .hide {
+      display: none;
+    }
+
+    h2,
+    h3 {
+      text-align: center;
+      color: #004085;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin: 10px 0 20px;
+    }
+
+    .option {
+      background: #e3f2fd;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .option:hover {
+      background: #bbdefb;
+    }
+
+    .selected {
+      background: #90caf9 !important;
+    }
+
+    button {
+      background: #007bff;
+      border: none;
+      padding: 10px 15px;
+      color: white;
+      border-radius: 8px;
+      font-size: 16px;
+      margin: 10px 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    #resultText {
+      font-size: 20px;
+      text-align: center;
+      color: #28a745;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container" id="loginPage">
+  <h2>🚀 Welcome to API Quiz</h2>
+  <input type="text" id="username" placeholder="Enter your name">
+  <button onclick="startQuiz()">Start Quiz</button>
+</div>
+
+<div class="container hide" id="quizPage">
+  <h3 id="welcome"></h3>
+  <div id="questionBox"></div>
+  <div id="optionsBox"></div>
+  <div style="text-align:center;">
+    <button onclick="prevQuestion()">Previous</button>
+    <button onclick="nextQuestion()">Next</button>
+    <button onclick="submitQuiz()">Submit</button>
+  </div>
+</div>
+
+<div class="container hide" id="resultPage">
+  <h2>🎉 Quiz Result</h2>
+  <p id="resultText"></p>
+  <button onclick="location.reload()">Restart Quiz</button>
+</div>
+
+<script>
+  const quizData = [
+    { q: "What does API stand for?", options: ["Application Programming Interface", "Automated Program Interaction", "Advanced Protocol Integration", "Applied Programming Input"], answer: 0 },
+    { q: "What is a Web Service?", options: ["Software designed to run only on a web browser", "Program used to control servers", "Software system designed to support interoperable machine-to-machine interaction over a network", "Local software application"], answer: 2 },
+    { q: "Which protocol is commonly used for REST APIs?", options: ["FTP", "SMTP", "HTTP", "TCP"], answer: 2 },
+    { q: "Which data format is commonly used in RESTful APIs?", options: ["CSV", "YAML", "JSON", "PDF"], answer: 2 },
+    { q: "Which HTTP method is used to retrieve data from a server?", options: ["POST", "GET", "DELETE", "PUT"], answer: 1 },
+    { q: "What does SOAP stand for?", options: ["Simple Object Access Protocol", "Secure Open Access Protocol", "Software Object Access Point", "Server Open Application Protocol"], answer: 0 },
+    { q: "Which of the following is NOT a valid HTTP method in REST?", options: ["PATCH", "TRACE", "CONNECT", "SEND"], answer: 3 },
+    { q: "In REST, which HTTP method is idempotent?", options: ["POST", "GET", "PUT", "Both B and C"], answer: 3 },
+    { q: "What status code is returned when a resource is not found?", options: ["200", "201", "404", "500"], answer: 2 },
+    { q: "Which status code means “Created”?", options: ["200", "201", "202", "204"], answer: 1 },
+    { q: "What is WSDL used for in web services?", options: ["Securing APIs", "Describing the structure of JSON", "Describing SOAP web services", "Encrypting data"], answer: 2 },
+    { q: "Which of the following formats is supported by SOAP?", options: ["JSON", "CSV", "XML", "HTML"], answer: 2 },
+    { q: "Which tool is commonly used to test RESTful APIs?", options: ["Git", "Visual Studio", "Postman", "WinRAR"], answer: 2 },
+    { q: "What does REST stand for?", options: ["Remote Entry Service Transfer", "Representational State Transfer", "Reliable Exchange Service Transport", "Regional State Transport"], answer: 1 },
+    { q: "What does CRUD stand for in REST API design?", options: ["Create, Read, Update, Delete", "Copy, Restore, Undo, Drop", "Create, Run, Undo, Deploy", "Connect, Reboot, Update, Delete"], answer: 0 },
+    { q: "What is the format of a REST API endpoint?", options: ["JSON", "XML", "URL", "CSV"], answer: 2 },
+    { q: "Which method is used to delete a resource in REST?", options: ["POST", "DELETE", "PUT", "UPDATE"], answer: 1 },
+    { q: "Which header is used to send the data type in API request?", options: ["Accept-Encoding", "Content-Type", "Authorization", "API-Key"], answer: 1 },
+    { q: "Which protocol is used by SOAP Web Services?", options: ["HTTP", "SMTP", "FTP", "All of the above"], answer: 3 },
+    { q: "Which of the following is a benefit of using APIs?", options: ["Slower integration", "Manual processes", "Automation and scalability", "Limited access to data"], answer: 2 }
+  ];
+
+  let currentQuestion = 0;
+  let userAnswers = [];
+
+  function startQuiz() {
+    const name = document.getElementById("username").value.trim();
+    if (!name) return alert("Please enter your name.");
+    document.getElementById("loginPage").classList.add("hide");
+    document.getElementById("quizPage").classList.remove("hide");
+    document.getElementById("welcome").textContent = `Hi ${name}, let's begin!`;
+    showQuestion();
+  }
+
+  function showQuestion() {
+    const question = quizData[currentQuestion];
+    document.getElementById("questionBox").textContent = `${currentQuestion + 1}. ${question.q}`;
+    const optionsBox = document.getElementById("optionsBox");
+    optionsBox.innerHTML = "";
+    question.options.forEach((opt, i) => {
+      const btn = document.createElement("div");
+      btn.className = "option";
+      btn.textContent = opt;
+      if (userAnswers[currentQuestion] === i) {
+        btn.classList.add("selected");
+      }
+      btn.onclick = () => {
+        userAnswers[currentQuestion] = i;
+        showQuestion();
+      };
+      optionsBox.appendChild(btn);
+    });
+  }
+
+  function nextQuestion() {
+    if (currentQuestion < quizData.length - 1) {
+      currentQuestion++;
+      showQuestion();
+    }
+  }
+
+  function prevQuestion() {
+    if (currentQuestion > 0) {
+      currentQuestion--;
+      showQuestion();
+    }
+  }
+
+  function submitQuiz() {
+    if (userAnswers.length < quizData.length) {
+      if (!confirm("You haven’t answered all questions. Submit anyway?")) return;
+    }
+
+    let score = 0;
+    quizData.forEach((q, i) => {
+      if (userAnswers[i] === q.answer) score++;
+    });
+
+    document.getElementById("quizPage").classList.add("hide");
+    document.getElementById("resultPage").classList.remove("hide");
+    document.getElementById("resultText").innerHTML = `You scored <strong>${score}</strong> out of ${quizData.length}!`;
+  }
+</script>
+
+</body>
+</html>
